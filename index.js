@@ -276,14 +276,84 @@ class MeroShareAutomation {
     await this.delay();
     await page.type("#transactionPIN", this.credentials.pin, { delay: 250 });
 
-    // Wait for apply button to be enabled and submit
-    await page.waitForFunction(() => {
-      const applyBtn = document.querySelector('button[type="submit"]');
-      return applyBtn && !applyBtn.disabled;
-    });
+    // Additional delay after PIN entry to allow validation
+    await this.delay(2000);
 
-    await page.click('button[type="submit"]');
-    console.log("Application submitted successfully!");
+    // Try multiple strategies to click the Apply button
+    try {
+      // Strategy 1: Wait for button to be enabled (original approach)
+      await page.waitForFunction(() => {
+        const applyBtn = document.querySelector('button[type="submit"]:not([disabled])');
+        return applyBtn !== null;
+      }, { timeout: 10000 });
+
+      await page.click('button[type="submit"]');
+      console.log("Application submitted successfully!");
+      
+    } catch (error) {
+      console.log("First strategy failed, trying alternative approaches...");
+      
+      // Strategy 2: Look for the specific Apply button with span text
+      try {
+        await page.waitForSelector('button[type="submit"] span', { timeout: 5000 });
+        const applyButton = await page.$('button[type="submit"] span');
+        if (applyButton) {
+          const buttonText = await page.evaluate(el => el.textContent.trim(), applyButton);
+          if (buttonText === 'Apply') {
+            await page.click('button[type="submit"]');
+            console.log("Application submitted successfully using strategy 2!");
+            return;
+          }
+        }
+      } catch (e) {
+        console.log("Strategy 2 failed, trying strategy 3...");
+      }
+
+      // Strategy 3: Force click using JavaScript
+      try {
+        await page.evaluate(() => {
+          const buttons = document.querySelectorAll('button[type="submit"]');
+          for (let button of buttons) {
+            const span = button.querySelector('span');
+            if (span && span.textContent.trim() === 'Apply') {
+              button.click();
+              return;
+            }
+          }
+        });
+        console.log("Application submitted successfully using strategy 3!");
+        
+      } catch (e) {
+        console.log("Strategy 3 failed, trying strategy 4...");
+        
+        // Strategy 4: Wait longer and try again
+        await this.delay(3000);
+        await page.click('button[type="submit"]');
+        console.log("Application submitted successfully using strategy 4!");
+      }
+    }
+
+    // Wait a bit to see if there's any response or error message
+    await this.delay(2000);
+    
+    // Check for any error messages or success confirmations
+    try {
+      const errorMessage = await page.$eval('.alert-danger', el => el.textContent);
+      if (errorMessage) {
+        console.error("Application error:", errorMessage);
+      }
+    } catch (e) {
+      // No error message found, which is good
+    }
+
+    try {
+      const successMessage = await page.$eval('.alert-success', el => el.textContent);
+      if (successMessage) {
+        console.log("Success message:", successMessage);
+      }
+    } catch (e) {
+      // No success message found
+    }
   }
 
   /**
