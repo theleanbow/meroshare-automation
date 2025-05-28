@@ -7,7 +7,7 @@ require("dotenv").config();
  * Automates the process of applying for shares on MeroShare platform
  */
 class MeroShareAutomation {
-  constructor() {
+  constructor(credentials) {
     this.config = {
       baseURL: "https://webbackend.cdsc.com.np/api/meroShare",
       frontendURL: "https://meroshare.cdsc.com.np",
@@ -16,13 +16,7 @@ class MeroShareAutomation {
       defaultDelay: 1000
     };
 
-    this.credentials = {
-      dpId: process.env.DP_ID,
-      username: process.env.MERO_SHARE_USERNAME,
-      password: process.env.MERO_SHARE_PASSWORD,
-      crnNumber: process.env.MERO_SHARE_CRN_NUMBER,
-      pin: process.env.MERO_SHARE_PIN
-    };
+    this.credentials = credentials;
 
     this.validateCredentials();
   }
@@ -31,11 +25,12 @@ class MeroShareAutomation {
    * Validates required environment variables
    */
   validateCredentials() {
-    const required = ['DP_ID', 'MERO_SHARE_USERNAME', 'MERO_SHARE_PASSWORD', 'MERO_SHARE_CRN_NUMBER', 'MERO_SHARE_PIN'];
-    const missing = required.filter(key => !process.env[key]);
+    // console.log(process.env);
+    const required = ['dpId', 'username', 'password', 'crnNumber', 'pin'];
+    const missing = required.filter(key => !this.credentials[key]);
     
     if (missing.length > 0) {
-      throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+      throw new Error(`Missing required credentials: ${missing.join(', ')}`);
     }
   }
 
@@ -371,7 +366,9 @@ class MeroShareAutomation {
       // Launch browser
       browser = await puppeteer.launch({ 
         headless: false,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+         args: ['--no-sandbox', '--disable-setuid-sandbox','--start-maximized'],
+        defaultViewport:null // Needed to apply --start-maximized properly
+        
       });
       const page = await browser.newPage();
 
@@ -413,11 +410,32 @@ class MeroShareAutomation {
 // Export the class for potential reuse
 module.exports = MeroShareAutomation;
 
-// Execute if run directly
+const fs = require("fs");
+const path = require("path");
+
 if (require.main === module) {
-  const automation = new MeroShareAutomation();
-  automation.execute().catch(error => {
-    console.error("Fatal error:", error);
+  const accountsPath = path.join(__dirname, "accounts.json");
+
+  if (!fs.existsSync(accountsPath)) {
+    console.error("accounts.json file not found!");
     process.exit(1);
-  });
+  }
+
+  const accounts = JSON.parse(fs.readFileSync(accountsPath, "utf-8"));
+
+  (async () => {
+    for (const [index, credentials] of accounts.entries()) {
+      console.log(`\n🔁 Starting automation for Account #${index + 1} (${credentials.username})`);
+      
+      const automation = new MeroShareAutomation(credentials);
+
+      try {
+        await automation.execute();
+      } catch (error) {
+        console.error(`❌ Failed for ${credentials.username}:`, error.message);
+      }
+    }
+
+    console.log("\n✅ All accounts processed.");
+  })();
 }
