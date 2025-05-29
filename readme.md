@@ -12,12 +12,13 @@ This tool is for educational purposes only. Use at your own risk. The developers
 
 ## ✨ Features
 
+- **Multi-Account Support**: Process multiple MeroShare accounts sequentially
 - **Automated Login**: Seamlessly logs into your MeroShare account
 - **Smart Share Selection**: Automatically selects the first available IPO
 - **Bank Integration**: Automatically selects your preferred bank account
 - **Form Automation**: Fills all required application forms
 - **Error Handling**: Comprehensive error handling and validation
-- **Configurable**: Easy configuration through environment variables
+- **Configurable**: Easy configuration through JSON file
 - **Professional Code**: Clean, maintainable, and well-documented codebase
 
 ## 🛠️ Prerequisites
@@ -42,18 +43,25 @@ Before you begin, ensure you have the following installed:
    npm install
    ```
 
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Edit the `.env` file with your credentials:
-   ```env
-   DP_ID=your_dp_id
-   MERO_SHARE_USERNAME=your_username
-   MERO_SHARE_PASSWORD=your_password
-   MERO_SHARE_CRN_NUMBER=your_crn_number
-   MERO_SHARE_PIN=your_4_digit_pin
+3. **Configure your accounts**
+   Create an `accounts.json` file with your account details:
+   ```json
+   [
+     {
+       "dpId": "your_dp_id_1",
+       "username": "your_username_1",
+       "password": "your_password_1",
+       "crnNumber": "your_crn_number_1",
+       "pin": "your_pin_1"
+     },
+     {
+       "dpId": "your_dp_id_2",
+       "username": "your_username_2",
+       "password": "your_password_2",
+       "crnNumber": "your_crn_number_2",
+       "pin": "your_pin_2"
+     }
+   ]
    ```
 
 ## 🚀 Usage
@@ -64,53 +72,66 @@ Before you begin, ensure you have the following installed:
 node index.js
 ```
 
+The automation will process each account in your `accounts.json` file sequentially.
+
 ### Programmatic Usage
 
 ```javascript
-const MeroShareAutomation = require('./src/meroshare-automation');
+const MeroShareAutomation = require('./index.js');
 
-const automation = new MeroShareAutomation();
+const credentials = {
+  dpId: "your_dp_id",
+  username: "your_username",
+  password: "your_password",
+  crnNumber: "your_crn_number",
+  pin: "your_pin"
+};
+
+const automation = new MeroShareAutomation(credentials);
 await automation.execute();
 ```
 
-### Advanced Configuration
+### Configuration
 
-You can customize the automation behavior by modifying the configuration in the class constructor:
+The automation has built-in configuration that can be accessed and modified through the `config` property:
 
 ```javascript
-const automation = new MeroShareAutomation();
-automation.config.timeout = 60000; // Increase timeout to 60 seconds
-automation.config.defaultDelay = 2000; // Increase delay between actions
-await automation.execute();
+const automation = new MeroShareAutomation(credentials);
+
+// Customize configuration
+automation.config.timeout = 60000;        // API timeout in milliseconds
+automation.config.retryAttempts = 3;      // Number of retry attempts
+automation.config.defaultDelay = 1000;    // Default delay between actions
 ```
 
 ## 📁 Project Structure
 
 ```
 meroshare-automation/
-├── index.js                       # Main automation class
-├── example.env                    # Environment variables template
-├── .gitignore                     # Git ignore file
-├── package.json                   # Project dependencies
-├── README.md                      # Project documentation
-└── LICENSE                        # License file
+├── index.js                # Main automation class
+├── accounts.json           # Account credentials configuration
+├── package.json           # Project dependencies
+├── README.md             # Project documentation
+└── LICENSE              # License file
 ```
 
 ## 🔧 Configuration
 
-### Environment Variables
+### Account Credentials Format
 
-| Variable | Description | Required |
+Each account in `accounts.json` requires the following fields:
+
+| Field | Description | Required |
 |----------|-------------|----------|
-| `DP_ID` | Your Depository Participant ID | ✅ |
-| `MERO_SHARE_USERNAME` | Your MeroShare username | ✅ |
-| `MERO_SHARE_PASSWORD` | Your MeroShare password | ✅ |
-| `MERO_SHARE_CRN_NUMBER` | Your CRN number | ✅ |
-| `MERO_SHARE_PIN` | Your 4-digit transaction PIN | ✅ |
+| `dpId` | Your Depository Participant ID | ✅ |
+| `username` | Your MeroShare username | ✅ |
+| `password` | Your MeroShare password | ✅ |
+| `crnNumber` | Your CRN number | ✅ |
+| `pin` | Your 4-digit transaction PIN | ✅ |
 
 ### Application Settings
 
-The automation applies for **10 units** by default. To change this, modify the `appliedKitta` value in the `fillApplicationForm` method.
+The automation applies for **10 units** by default. This value is currently hardcoded in the `fillApplicationForm` method.
 
 ## 🤝 Contributing
 
