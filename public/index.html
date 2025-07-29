@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MeroShare Account Manager</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+
+  <!-- DataTables CSS -->
+  <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+
+  <style>
+    body {
+      background: linear-gradient(135deg, #f9fafb 0%, #e9ecef 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+    }
+    h1 {
+      font-weight: 700;
+      color: #0d6efd;
+      text-shadow: 0 2px 5px rgba(13, 110, 253, 0.3);
+    }
+
+    /* Badge colors */
+    .badge-alloted {
+      background-color: #198754 !important;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-notalloted {
+      background-color: #dc3545 !important;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-verified {
+      background-color: #0d6efd !important;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Table hover and stripes */
+    table.dataTable tbody tr:hover {
+      background-color: #d0ebff !important;
+      cursor: pointer;
+    }
+
+    /* Style filter input & reset button group */
+    #historySearch {
+      max-width: 400px;
+      transition: box-shadow 0.3s ease-in-out;
+    }
+    #historySearch:focus {
+      box-shadow: 0 0 8px rgba(13, 110, 253, 0.6);
+      border-color: #0d6efd;
+      outline: none;
+    }
+
+    /* Accounts cards styling */
+    #accountList {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    #accountList .card {
+      width: 100%;
+      max-width: 320px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      border-radius: 0.6rem;
+      transition: transform 0.2s ease-in-out;
+      background: white;
+    }
+    #accountList .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    #accountList .card-body {
+      padding: 1rem 1.5rem;
+    }
+    #accountList .card-title {
+      font-weight: 700;
+      font-size: 1.2rem;
+      margin-bottom: 0.25rem;
+      color: #0d6efd;
+    }
+    #accountList .card-subtitle {
+      font-size: 0.9rem;
+      color: #6c757d;
+      margin-bottom: 0.5rem;
+    }
+    #accountList .btn-group {
+      margin-top: 0.5rem;
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 768px) {
+      #historySearch {
+        max-width: 100%;
+        margin-bottom: 0.5rem;
+      }
+      #accountList {
+        justify-content: center;
+      }
+    }
+
+    /* Stats cards */
+    .stats-card {
+      background: white;
+      border-radius: 0.8rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      padding: 1.2rem 1.5rem;
+      text-align: center;
+      flex: 1 1 200px;
+      margin: 0.5rem;
+      transition: transform 0.3s ease;
+      cursor: default;
+    }
+    .stats-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+    }
+    .stats-number {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: #0d6efd;
+      margin-bottom: 0.3rem;
+    }
+    .stats-label {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #495057;
+    }
+    .progress {
+      height: 12px;
+      margin-top: 0.8rem;
+      border-radius: 0.6rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container py-5">
+    <h1 class="text-center mb-5">📥 MeroShare Account Manager</h1>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs" id="viewTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="accounts-tab" data-bs-toggle="tab" data-bs-target="#accounts" type="button" role="tab" aria-controls="accounts" aria-selected="false">Accounts</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="false">History</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats" type="button" role="tab" aria-controls="stats" aria-selected="false">Stats</button>
+      </li>
+    </ul>
+
+    <div class="tab-content mt-4" id="tabContent">
+      <!-- Accounts Tab -->
+      <div class="tab-pane fade show active" id="accounts" role="tabpanel" aria-labelledby="accounts-tab">
+        <form id="accountForm" class="card p-4 shadow-sm" autocomplete="off">
+          <div class="row g-3">
+            <div class="col-md-6"><input name="fullname" class="form-control" placeholder="Full Name" required /></div>
+            <div class="col-md-6"><input name="boid" class="form-control" placeholder="BOID" required /></div>
+            <div class="col-md-6"><input name="dpId" class="form-control" placeholder="DP ID" required /></div>
+            <div class="col-md-6">
+              <input name="username" class="form-control" placeholder="Username" required autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+            </div>
+            <div class="col-md-4 position-relative">
+              <input name="password" class="form-control" placeholder="Password" type="password" required autocomplete="new-password"/>
+              <i class="bi bi-eye position-absolute top-50 end-0 translate-middle-y me-3 cursor-pointer" onclick="toggleVisibility(this)"></i>
+            </div>
+            <div class="col-md-4 position-relative">
+              <input name="crnNumber" class="form-control" placeholder="CRN Number" type="password" required />
+              <i class="bi bi-eye position-absolute top-50 end-0 translate-middle-y me-3 cursor-pointer" onclick="toggleVisibility(this)"></i>
+            </div>
+            <div class="col-md-4 position-relative">
+              <input name="pin" class="form-control" placeholder="Transaction PIN" type="password" required />
+              <i class="bi bi-eye position-absolute top-50 end-0 translate-middle-y me-3 cursor-pointer" onclick="toggleVisibility(this)"></i>
+            </div>
+          </div>
+          <button class="btn btn-primary mt-3" type="submit">➕ Add Account</button>
+        </form>
+
+        <p id="result" class="text-center mt-3"></p>
+
+        <h4 class="mt-5">📋 Existing Accounts</h4>
+        <div id="accountList"></div>
+      </div>
+
+      <!-- History Tab -->
+      <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-3 gap-2">
+          <input type="text" id="historySearch" class="form-control" placeholder="🔍 Search by name, username, company, or status" />
+          <button class="btn btn-outline-secondary" id="resetHistoryBtn" type="button">⟳ Reset</button>
+        </div>
+        <div class="table-responsive shadow-sm">
+          <table class="table table-bordered table-striped table-hover bg-white" id="historyTable" style="width:100%">
+            <thead class="table-primary">
+              <tr>
+                <th>#</th>
+                <th>Full Name</th>
+                <th>Username</th>
+                <th>BOID</th>
+                <th>Company</th>
+                <th>Units</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Remarks</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Stats Tab -->
+      <div class="tab-pane fade" id="stats" role="tabpanel" aria-labelledby="stats-tab">
+        <div class="d-flex flex-wrap justify-content-center mt-4" id="statsContainer">
+          <!-- Stats cards inserted dynamically -->
+          <div class="stats-card">
+            <div class="stats-number" id="totalApplications">0</div>
+            <div class="stats-label">Total Applications</div>
+          </div>
+          <div class="stats-card">
+            <div class="stats-number text-success" id="totalAllotted">0</div>
+            <div class="stats-label">Total Allotted</div>
+            <div class="progress mt-2">
+              <div id="progressAllotted" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="stats-card">
+            <div class="stats-number text-danger" id="totalNotAllotted">0</div>
+            <div class="stats-label">Total Not Allotted</div>
+            <div class="progress mt-2">
+              <div id="progressNotAllotted" class="progress-bar bg-danger" role="progressbar" style="width: 0%"></div>
+            </div>
+          </div>
+          <div class="stats-card">
+            <div class="stats-number text-primary" id="totalVerified">0</div>
+            <div class="stats-label">Total Verified</div>
+            <div class="progress mt-2">
+              <div id="progressVerified" class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal (unchanged) -->
+  <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content p-3">
+        <div class="modal-header">
+          <h5 class="modal-title">✏️ Edit Account</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="editForm">
+          <div class="modal-body row g-3">
+            <input type="hidden" name="index" />
+            <div class="col-12"><input name="fullname" class="form-control" placeholder="Full Name" required /></div>
+            <div class="col-12"><input name="boid" class="form-control" placeholder="BOID" required /></div>
+            <div class="col-12"><input name="dpId" class="form-control" placeholder="DP ID" required /></div>
+            <div class="col-12"><input name="username" class="form-control" placeholder="Username" required /></div>
+            <div class="col-12 position-relative">
+              <input name="password" class="form-control" placeholder="Password" type="password" required />
+              <i class="bi bi-eye position-absolute top-50 end-0 translate-middle-y me-3 cursor-pointer" onclick="toggleVisibility(this)"></i>
+            </div>
+            <div class="col-12 position-relative">
+              <input name="crnNumber" class="form-control" placeholder="CRN Number" type="password" required />
+              <i class="bi bi-eye position-absolute top-50 end-0 translate-middle-y me-3 cursor-pointer" onclick="toggleVisibility(this)"></i>
+            </div>
+            <div class="col-12 position-relative">
+              <input name="pin" class="form-control" placeholder="Transaction PIN" type="password" required />
+              <i class="bi bi-eye position-absolute top-50 end-0 translate-middle-y me-3 cursor-pointer" onclick="toggleVisibility(this)"></i>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button class="btn btn-success" type="submit">💾 Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- jQuery (required for DataTables) -->
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+
+  <!-- Bootstrap Bundle JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- DataTables JS -->
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+  <script>
+    function toggleVisibility(icon) {
+      const input = icon.previousElementSibling;
+      input.type = input.type === "password" ? "text" : "password";
+      icon.classList.toggle("bi-eye");
+      icon.classList.toggle("bi-eye-slash");
+    }
+
+    let historyTable;
+
+    async function loadAccounts() {
+      const res = await fetch("/accounts");
+      const accounts = await res.json();
+      const list = document.getElementById("accountList");
+      list.innerHTML = "";
+
+      accounts.forEach((acc, index) => {
+        // Create card for each account
+        const card = document.createElement("div");
+        card.className = "card";
+
+        card.innerHTML = `
+          <div class="card-body">
+            <h5 class="card-title">${acc.fullname}</h5>
+            <h6 class="card-subtitle mb-2 text-muted">BOID: ${acc.boid}</h6>
+            <p class="card-text mb-1"><strong>Username:</strong> ${acc.username}</p>
+            <p class="text-muted small">🔒 Password/CRN/PIN Hidden</p>
+            <div class="btn-group" role="group" aria-label="Account actions">
+              <button class="btn btn-sm btn-warning" onclick="openEditModal(${index})">✏️ Edit</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteAccount(${index})">🗑️ Delete</button>
+            </div>
+          </div>
+        `;
+
+        list.appendChild(card);
+      });
+    }
+
+    async function loadHistory() {
+      try {
+        const res = await fetch("/history");
+        const data = await res.json();
+        window.fullHistory = data;
+
+        // Destroy old DataTable instance if exists
+        if ($.fn.DataTable.isDataTable('#historyTable')) {
+          historyTable.clear().destroy();
+        }
+
+        // Prepare rows
+        const rows = data.map((entry, i) => {
+          const statusRaw = entry.statusName || "";
+          const status = statusRaw.toLowerCase().trim();
+
+          let badgeClass = "";
+          if (status === "alloted") badgeClass = "badge-alloted";
+          else if (status === "not alloted") badgeClass = "badge-notalloted";
+          else if (status === "verified") badgeClass = "badge-verified";
+
+          const statusCell = badgeClass
+            ? `<span class="badge ${badgeClass}">${entry.statusName}</span>`
+            : `${entry.statusName || "-"}`;
+
+          const dateString = entry.date ? new Date(entry.date).toLocaleString() : "-";
+
+          return [
+            i + 1,
+            entry.fullname || "-",
+            entry.username || "-",
+            entry.boid || "-",
+            entry.company || "-",
+            entry.units || "-",
+            dateString,
+            statusCell,
+            entry.meroshareRemark || "-"
+          ];
+        });
+
+        // Initialize DataTable
+        historyTable = $('#historyTable').DataTable({
+          data: rows,
+          columns: [
+            { title: "#" },
+            { title: "Full Name" },
+            { title: "Username" },
+            { title: "BOID" },
+            { title: "Company" },
+            { title: "Units" },
+            { title: "Date" },
+            { title: "Status", orderable: true, searchable: true },
+            { title: "Remarks" },
+          ],
+          // order: [[6, "desc"]],
+          pageLength: 10,
+          lengthMenu: [5, 10, 25, 50],
+          language: {
+            search: "Quick Search:",
+            lengthMenu: "Show _MENU_ entries",
+            zeroRecords: "No matching records found",
+            info: "Showing _START_ to _END_ of _TOTAL_ entries",
+            infoEmpty: "No entries available",
+            infoFiltered: "(filtered from _MAX_ total entries)",
+            paginate: {
+              previous: "‹",
+              next: "›"
+            }
+          },
+          columnDefs: [
+            { targets: 7, orderable: true, searchable: true, type: 'html' }
+          ],
+          responsive: true,
+        });
+
+        // Hook search input
+        $('#historySearch').off('input').on('input', function () {
+          historyTable.search(this.value).draw();
+        });
+
+        // Reset button clears search
+        document.getElementById('resetHistoryBtn').onclick = () => {
+          document.getElementById('historySearch').value = '';
+          historyTable.search('').draw();
+        };
+
+        updateStats(data);
+      } catch (err) {
+        console.error("Failed to load history:", err);
+      }
+    }
+
+    // Update stats tab based on history data
+    function updateStats(data) {
+      const total = data.length;
+      const countByStatus = data.reduce((acc, entry) => {
+        const st = (entry.statusName || "").toLowerCase().trim();
+        acc[st] = (acc[st] || 0) + 1;
+        return acc;
+      }, {});
+
+      const allotted = countByStatus["alloted"] || 0;
+      const notAllotted = countByStatus["not alloted"] || 0;
+      const verified = countByStatus["verified"] || 0;
+
+      // Update numbers
+      document.getElementById("totalApplications").textContent = total;
+      document.getElementById("totalAllotted").textContent = allotted;
+      document.getElementById("totalNotAllotted").textContent = notAllotted;
+      document.getElementById("totalVerified").textContent = verified;
+
+      // Update progress bars (avoid divide by zero)
+      function percent(n) {
+        return total ? Math.round((n / total) * 100) : 0;
+      }
+      document.getElementById("progressAllotted").style.width = percent(allotted) + "%";
+      document.getElementById("progressAllotted").setAttribute("aria-valuenow", percent(allotted));
+      document.getElementById("progressNotAllotted").style.width = percent(notAllotted) + "%";
+      document.getElementById("progressNotAllotted").setAttribute("aria-valuenow", percent(notAllotted));
+      document.getElementById("progressVerified").style.width = percent(verified) + "%";
+      document.getElementById("progressVerified").setAttribute("aria-valuenow", percent(verified));
+    }
+
+    // Form submissions and account edit/delete (same logic as before)
+    document.getElementById("accountForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const form = e.target;
+      const data = Object.fromEntries(new FormData(form).entries());
+      const res = await fetch("/add-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      document.getElementById("result").textContent = await res.text();
+      form.reset();
+      await loadAccounts();
+    });
+
+    async function deleteAccount(index) {
+      if (!confirm("Are you sure you want to delete this account?")) return;
+      const res = await fetch(`/delete-account/${index}`, { method: "DELETE" });
+      document.getElementById("result").textContent = await res.text();
+      await loadAccounts();
+    }
+
+    async function openEditModal(index) {
+      const res = await fetch("/accounts");
+      const accounts = await res.json();
+      const acc = accounts[index];
+      const form = document.getElementById("editForm");
+      form.index.value = index;
+      form.fullname.value = acc.fullname;
+      form.boid.value = acc.boid;
+      form.dpId.value = acc.dpId;
+      form.username.value = acc.username;
+      form.password.value = acc.password;
+      form.crnNumber.value = acc.crnNumber;
+      form.pin.value = acc.pin;
+      new bootstrap.Modal(document.getElementById("editModal")).show();
+    }
+
+    document.getElementById("editForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const form = e.target;
+      const index = form.index.value;
+      const updated = {
+        fullname: form.fullname.value,
+        boid: form.boid.value,
+        dpId: form.dpId.value,
+        username: form.username.value,
+        password: form.password.value,
+        crnNumber: form.crnNumber.value,
+        pin: form.pin.value,
+      };
+      await fetch(`/delete-account/${index}`, { method: "DELETE" });
+      await fetch("/add-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated),
+      });
+      document.getElementById("result").textContent = "✅ Account updated.";
+      bootstrap.Modal.getInstance(document.getElementById("editModal")).hide();
+      await loadAccounts();
+    });
+
+    window.onload = () => {
+      loadAccounts();
+      loadHistory();
+    };
+  </script>
+
+</body>
+</html>
